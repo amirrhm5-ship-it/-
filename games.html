@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🎮 Игры</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+
+  :root {
+    --bg: #0a0a1a;
+    --surface: #111128;
+    --card: #161630;
+    --accent: #00f5ff;
+    --accent2: #ff006e;
+    --accent3: #7b2fff;
+    --gold: #ffd700;
+    --text: #e0e0ff;
+    --text-dim: #7070a0;
+    --glow: 0 0 20px rgba(0,245,255,0.4);
+    --glow2: 0 0 20px rgba(255,0,110,0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── MENU ── */
+  #menu {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    gap: 16px;
+  }
+
+  .menu-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+  }
+
+  .balance-chip {
+    background: linear-gradient(135deg, #1a1a3e, #0d0d2a);
+    border: 1px solid var(--accent);
+    border-radius: 50px;
+    padding: 8px 24px;
+    font-size: 16px;
+    color: var(--gold);
+    font-weight: 700;
+    box-shadow: var(--glow);
+    margin-bottom: 8px;
+  }
+
+  .game-card {
+    width: 100%;
+    max-width: 380px;
+    background: var(--card);
+    border-radius: 16px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .game-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .game-card:nth-child(1)::before { background: linear-gradient(135deg, rgba(0,245,255,0.08), transparent); }
+  .game-card:nth-child(2)::before { background: linear-gradient(135deg, rgba(255,0,110,0.08), transparent); }
+  .game-card:nth-child(3)::before { background: linear-gradient(135deg, rgba(123,47,255,0.08), transparent); }
+
+  .game-card:active::before { opacity: 1; }
+  .game-card:active { transform: scale(0.97); }
+
+  .game-icon {
+    font-size: 42px;
+    line-height: 1;
+    filter: drop-shadow(0 0 8px currentColor);
+  }
+
+  .game-info { flex: 1; }
+
+  .game-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .game-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  .game-reward {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gold);
+  }
+
+  .game-best {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: right;
+  }
+
+  .game-arrow {
+    font-size: 20px;
+    color: var(--text-dim);
+  }
+
+  /* ── GAME SCREEN ── */
+  #game-screen {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .game-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    min-height: 52px;
+  }
+
+  .back-btn {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .back-btn:active { background: rgba(255,255,255,0.08); }
+
+  .score-display {
+    font-family: 'Orbitron', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    text-shadow: var(--glow);
+  }
+
+  .best-display {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: right;
+  }
+
+  canvas {
+    display: block;
+    flex: 1;
+    width: 100%;
+  }
+
+  /* ── CONTROLS ── */
+  .controls {
+    background: var(--surface);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 8px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    user-select: none;
+  }
+
+  .ctrl-btn {
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 22px;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.1s;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+  .ctrl-btn:active { background: rgba(255,255,255,0.1); transform: scale(0.92); }
+
+  .ctrl-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* ── OVERLAY ── */
+  #overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .overlay-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 26px;
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: var(--glow);
+  }
+
+  .overlay-score {
+    font-size: 20px;
+    color: var(--gold);
+    font-weight: 700;
+  }
+
+  .overlay-credits {
+    font-size: 15px;
+    color: var(--text-dim);
+    text-align: center;
+    max-width: 260px;
+  }
+
+  .overlay-btn {
+    background: linear-gradient(135deg, var(--accent3), var(--accent));
+    border: none;
+    border-radius: 12px;
+    color: #000;
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 14px 32px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 20px rgba(0,245,255,0.3);
+    transition: all 0.15s;
+  }
+  .overlay-btn:active { transform: scale(0.96); }
+
+  .overlay-btn2 {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    color: var(--text-dim);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    padding: 12px 28px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .overlay-btn2:active { background: rgba(255,255,255,0.06); }
+
+  /* Plane controls */
+  #plane-controls {
+    display: none;
+    gap: 12px;
+  }
+  .plane-btn {
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 50%;
+    width: 64px;
+    height: 64px;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text);
+  }
+  .plane-btn:active { background: rgba(255,255,255,0.12); transform: scale(0.9); }
+
+  .notification {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #1a3a1a, #0d200d);
+    border: 1px solid #00c853;
+    border-radius: 12px;
+    padding: 12px 24px;
+    color: #00c853;
+    font-weight: 700;
+    font-size: 16px;
+    z-index: 200;
+    opacity: 0;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<!-- MAIN MENU -->
+<div id="menu">
+  <div class="menu-title">🎮 ИГРЫ</div>
+  <div class="balance-chip">💰 Баланс: <span id="balance-display">---</span> кр.</div>
+
+  <div class="game-card" onclick="startGame('pong')">
+    <div class="game-icon">🏓</div>
+    <div class="game-info">
+      <div class="game-name" style="color:#00f5ff">ПИНГ-ПОНГ</div>
+      <div class="game-desc">Отбивай мяч и набирай очки!</div>
+      <div class="game-reward">+1 кр. за каждые 5 очков</div>
+    </div>
+    <div>
+      <div class="game-best" id="best-pong">Рекорд: 0</div>
+      <div class="game-arrow">›</div>
+    </div>
+  </div>
+
+  <div class="game-card" onclick="startGame('snake')">
+    <div class="game-icon">🐍</div>
+    <div class="game-info">
+      <div class="game-name" style="color:#ff006e">ЗМЕЙКА</div>
+      <div class="game-desc">Собирай еду, не врезайся!</div>
+      <div class="game-reward">+2 кр. за каждые 5 очков</div>
+    </div>
+    <div>
+      <div class="game-best" id="best-snake">Рекорд: 0</div>
+      <div class="game-arrow">›</div>
+    </div>
+  </div>
+
+  <div class="game-card" onclick="startGame('plane')">
+    <div class="game-icon">✈️</div>
+    <div class="game-info">
+      <div class="game-name" style="color:#7b2fff">САМОЛЁТИК</div>
+      <div class="game-desc">Уклоняйся от врагов!</div>
+      <div class="game-reward">+1 кр. за каждые 3 очка</div>
+    </div>
+    <div>
+      <div class="game-best" id="best-plane">Рекорд: 0</div>
+      <div class="game-arrow">›</div>
+    </div>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen">
+  <div class="game-header">
+    <button class="back-btn" onclick="exitGame()">← Меню</button>
+    <div class="score-display">🏆 <span id="score-val">0</span></div>
+    <div class="best-display">Рекорд<br><span id="best-val">0</span></div>
+  </div>
+  <canvas id="canvas"></canvas>
+  <div class="controls" id="controls-area">
+    <!-- injected per game -->
+  </div>
+</div>
+
+<!-- OVERLAY -->
+<div id="overlay">
+  <div class="overlay-title" id="overlay-title">ИГРА ОКОНЧЕНА</div>
+  <div class="overlay-score" id="overlay-score"></div>
+  <div class="overlay-credits" id="overlay-credits"></div>
+  <button class="overlay-btn" onclick="restartGame()">🔄 Играть снова</button>
+  <button class="overlay-btn2" onclick="exitGame()">← В меню</button>
+</div>
+
+<div class="notification" id="notif"></div>
+
+<script>
+// ── TELEGRAM INIT ──────────────────────────────────────────────────────────
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.expand(); tg.setBackgroundColor('#0a0a1a'); }
+
+const userId = tg?.initDataUnsafe?.user?.id || null;
+const GAME_SECRET = "GAME_SECRET_KEY_CHANGE_THIS"; // must match bot.py
+const BOT_TOKEN = "8789491424:AAFKGxu5ySd_XElWWKO9tZUJvUuEyFFao8s";
+
+// ── STORAGE ────────────────────────────────────────────────────────────────
+const bests = JSON.parse(localStorage.getItem('gameBests') || '{"pong":0,"snake":0,"plane":0}');
+const sessionEarned = { pong: 0, snake: 0, plane: 0 };
+let localBalance = 0;
+
+function saveBests() {
+  localStorage.setItem('gameBests', JSON.stringify(bests));
+  document.getElementById('best-pong').textContent = 'Рекорд: ' + bests.pong;
+  document.getElementById('best-snake').textContent = 'Рекорд: ' + bests.snake;
+  document.getElementById('best-plane').textContent = 'Рекорд: ' + bests.plane;
+}
+saveBests();
+document.getElementById('balance-display').textContent = '...';
+
+// ── CREDIT SYSTEM ──────────────────────────────────────────────────────────
+async function awardCredits(game, score) {
+  let credits = 0;
+  if (game === 'pong') credits = Math.floor(score / 5);
+  else if (game === 'snake') credits = Math.floor(score / 5) * 2;
+  else if (game === 'plane') credits = Math.floor(score / 3);
+  credits = Math.min(credits, 200);
+
+  if (credits > 0 && userId) {
+    try {
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          chat_id: userId,
+          text: `/gamecredits ${userId} ${credits} ${GAME_SECRET}`
+        })
+      });
+    } catch(e) {}
+    sessionEarned[game] = (sessionEarned[game] || 0) + credits;
+    localBalance += credits;
+    document.getElementById('balance-display').textContent = '~' + localBalance;
+  }
+  return credits;
+}
+
+function showNotif(text) {
+  const el = document.getElementById('notif');
+  el.textContent = text;
+  el.style.opacity = '1';
+  setTimeout(() => el.style.opacity = '0', 3000);
+}
+
+// ── GAME ENGINE ────────────────────────────────────────────────────────────
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let currentGame = null;
+let animFrame = null;
+let gameScore = 0;
+let gameRunning = false;
+
+function startGame(name) {
+  currentGame = name;
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('game-screen').style.flexDirection = 'column';
+  document.getElementById('game-screen').style.display = 'flex';
+  document.getElementById('overlay').style.display = 'none';
+  gameScore = 0;
+  gameRunning = true;
+  updateScoreDisplay();
+  resizeCanvas();
+  setupControls(name);
+  if (name === 'pong') initPong();
+  else if (name === 'snake') initSnake();
+  else if (name === 'plane') initPlane();
+}
+
+function exitGame() {
+  gameRunning = false;
+  if (animFrame) cancelAnimationFrame(animFrame);
+  document.getElementById('game-screen').style.display = 'none';
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('menu').style.display = 'flex';
+}
+
+function restartGame() {
+  document.getElementById('overlay').style.display = 'none';
+  gameScore = 0;
+  gameRunning = true;
+  updateScoreDisplay();
+  if (currentGame === 'pong') initPong();
+  else if (currentGame === 'snake') initSnake();
+  else if (currentGame === 'plane') initPlane();
+}
+
+function resizeCanvas() {
+  const screen = document.getElementById('game-screen');
+  const header = document.querySelector('.game-header');
+  const controls = document.getElementById('controls-area');
+  canvas.width = screen.clientWidth;
+  canvas.height = screen.clientHeight - header.offsetHeight - controls.offsetHeight;
+}
+window.addEventListener('resize', () => { if (currentGame) resizeCanvas(); });
+
+function updateScoreDisplay() {
+  document.getElementById('score-val').textContent = gameScore;
+  document.getElementById('best-val').textContent = bests[currentGame] || 0;
+}
+
+async function gameOver() {
+  gameRunning = false;
+  if (animFrame) cancelAnimationFrame(animFrame);
+  if (gameScore > (bests[currentGame] || 0)) {
+    bests[currentGame] = gameScore;
+    saveBests();
+  }
+  const credits = await awardCredits(currentGame, gameScore);
+  document.getElementById('overlay-title').textContent = 'ИГРА ОКОНЧЕНА';
+  document.getElementById('overlay-score').textContent = `Счёт: ${gameScore}  |  Рекорд: ${bests[currentGame]}`;
+  document.getElementById('overlay-credits').textContent =
+    credits > 0 ? `+${credits} кредитов начислено на баланс!` : 'Набери больше очков для наград!';
+  document.getElementById('overlay').style.display = 'flex';
+  if (credits > 0) showNotif(`+${credits} кредитов зачислено!`);
+}
+
+// ── CONTROLS ───────────────────────────────────────────────────────────────
+function setupControls(game) {
+  const area = document.getElementById('controls-area');
+  area.innerHTML = '';
+
+  if (game === 'pong') {
+    area.innerHTML = `
+      <button class="ctrl-btn" id="paddle-left" style="width:100px">◀</button>
+      <button class="ctrl-btn" id="paddle-right" style="width:100px">▶</button>
+    `;
+    area.style.display = 'flex';
+    area.style.justifyContent = 'center';
+    area.style.gap = '32px';
+  } else if (game === 'snake') {
+    area.innerHTML = `
+      <div class="ctrl-row">
+        <button class="ctrl-btn" id="s-up">▲</button>
+        <div style="display:flex;gap:8px">
+          <button class="ctrl-btn" id="s-left">◀</button>
+          <button class="ctrl-btn" id="s-down">▼</button>
+          <button class="ctrl-btn" id="s-right">▶</button>
+        </div>
+      </div>
+    `;
+    area.style.display = 'flex';
+  } else if (game === 'plane') {
+    area.innerHTML = `
+      <button class="plane-btn" id="p-left">◀</button>
+      <button class="plane-btn" id="p-up">🔫</button>
+      <button class="plane-btn" id="p-right">▶</button>
+    `;
+    area.style.display = 'flex';
+    area.style.justifyContent = 'center';
+    area.style.gap = '24px';
+    area.style.padding = '12px';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ── GAME 1: PING PONG ──────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+let pong = {};
+
+function initPong() {
+  const W = canvas.width, H = canvas.height;
+  pong = {
+    ball: { x: W/2, y: H/2, vx: 4, vy: -4, r: 8 },
+    paddle: { x: W/2 - 50, w: 100, h: 12, speed: 0 },
+    aiPaddle: { x: W/2 - 50, w: 100, h: 12 },
+    particles: [],
+  };
+  bindPongControls();
+  requestAnimationFrame(loopPong);
+}
+
+function bindPongControls() {
+  const left = document.getElementById('paddle-left');
+  const right = document.getElementById('paddle-right');
+  if (!left) return;
+  left.addEventListener('touchstart', e => { e.preventDefault(); pong.paddle.speed = -9; });
+  left.addEventListener('touchend', e => { e.preventDefault(); pong.paddle.speed = 0; });
+  right.addEventListener('touchstart', e => { e.preventDefault(); pong.paddle.speed = 9; });
+  right.addEventListener('touchend', e => { e.preventDefault(); pong.paddle.speed = 0; });
+}
+
+function loopPong() {
+  if (!gameRunning) return;
+  const W = canvas.width, H = canvas.height;
+  const b = pong.ball, p = pong.paddle, ai = pong.aiPaddle;
+
+  // Move paddle
+  p.x = Math.max(0, Math.min(W - p.w, p.x + p.speed));
+
+  // AI paddle
+  const aiCenter = ai.x + ai.w / 2;
+  if (aiCenter < b.x - 5) ai.x += 3;
+  else if (aiCenter > b.x + 5) ai.x -= 3;
+  ai.x = Math.max(0, Math.min(W - ai.w, ai.x));
+
+  // Move ball
+  b.x += b.vx;
+  b.y += b.vy;
+
+  // Wall bounce
+  if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx); }
+  if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx); }
+
+  // AI paddle (top)
+  if (b.vy < 0 && b.y - b.r < 20 + ai.h && b.y - b.r > 16 && b.x > ai.x && b.x < ai.x + ai.w) {
+    b.vy = Math.abs(b.vy);
+    b.vx += (b.x - (ai.x + ai.w/2)) * 0.12;
+    spawnParticles(b.x, b.y, '#ff006e');
+  }
+
+  // Player paddle (bottom)
+  const pH = H - 20 - p.h;
+  if (b.vy > 0 && b.y + b.r > pH && b.y + b.r < pH + p.h + b.r && b.x > p.x && b.x < p.x + p.w) {
+    b.vy = -Math.abs(b.vy);
+    b.vx += (b.x - (p.x + p.w/2)) * 0.12;
+    b.vx = Math.max(-8, Math.min(8, b.vx));
+    const spd = Math.min(Math.abs(b.vy) * 1.04, 10);
+    b.vy = -spd;
+    gameScore++;
+    updateScoreDisplay();
+    spawnParticles(b.x, b.y, '#00f5ff');
+  }
+
+  // Ball out
+  if (b.y > H + 20) { gameOver(); return; }
+  if (b.y < -20) {
+    b.y = H/2; b.x = W/2;
+    b.vx = (Math.random() - 0.5) * 6;
+    b.vy = 4;
+  }
+
+  // Particles
+  pong.particles = pong.particles.filter(p => p.life > 0);
+  pong.particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= 3; p.r *= 0.95;
+  });
+
+  drawPong();
+  animFrame = requestAnimationFrame(loopPong);
+}
+
+function spawnParticles(x, y, color) {
+  for (let i = 0; i < 10; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const spd = Math.random() * 4 + 1;
+    pong.particles.push({
+      x, y, vx: Math.cos(a)*spd, vy: Math.sin(a)*spd,
+      r: Math.random()*4+2, life: 100, color
+    });
+  }
+}
+
+function drawPong() {
+  const W = canvas.width, H = canvas.height;
+  ctx.fillStyle = '#0a0a1a';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  // Center line
+  ctx.setLineDash([8,8]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+  ctx.setLineDash([]);
+
+  const b = pong.ball, p = pong.paddle, ai = pong.aiPaddle;
+
+  // AI paddle
+  drawRoundRect(ai.x, 16, ai.w, ai.h, 6, '#ff006e', 0.4);
+  // Player paddle
+  drawRoundRect(p.x, H-20-p.h, p.w, p.h, 6, '#00f5ff', 1);
+  // Paddle glow
+  ctx.shadowColor = '#00f5ff'; ctx.shadowBlur = 15;
+  drawRoundRect(p.x, H-20-p.h, p.w, p.h, 6, '#00f5ff', 0.2);
+  ctx.shadowBlur = 0;
+
+  // Ball
+  ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 20;
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Particles
+  pong.particles.forEach(pt => {
+    ctx.globalAlpha = pt.life / 100;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI*2);
+    ctx.fillStyle = pt.color;
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+}
+
+function drawRoundRect(x, y, w, h, r, color, alpha) {
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ── GAME 2: SNAKE ──────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+let snake = {};
+
+function initSnake() {
+  const CELL = 20;
+  const cols = Math.floor(canvas.width / CELL);
+  const rows = Math.floor(canvas.height / CELL);
+  snake = {
+    body: [{x: Math.floor(cols/2), y: Math.floor(rows/2)}],
+    dir: {x: 1, y: 0},
+    nextDir: {x: 1, y: 0},
+    food: null,
+    bonus: null,
+    bonusTimer: 0,
+    CELL, cols, rows,
+    moveTimer: 0,
+    moveInterval: 130,
+    lastTime: 0,
+    trail: [],
+  };
+  placeSnakeFood();
+  bindSnakeControls();
+  animFrame = requestAnimationFrame(loopSnake);
+}
+
+function placeSnakeFood() {
+  const s = snake;
+  let pos;
+  do {
+    pos = {x: Math.floor(Math.random()*s.cols), y: Math.floor(Math.random()*s.rows)};
+  } while (s.body.some(b => b.x===pos.x && b.y===pos.y));
+  s.food = pos;
+  // Random bonus
+  if (Math.random() < 0.3 && !s.bonus) {
+    let bpos;
+    do {
+      bpos = {x: Math.floor(Math.random()*s.cols), y: Math.floor(Math.random()*s.rows)};
+    } while (s.body.some(b => b.x===bpos.x && b.y===bpos.y) || (s.food.x===bpos.x&&s.food.y===bpos.y));
+    s.bonus = bpos;
+    s.bonusTimer = 100;
+  }
+}
+
+function bindSnakeControls() {
+  const dirs = {
+    's-up':    {x:0,y:-1}, 's-down':  {x:0,y:1},
+    's-left':  {x:-1,y:0}, 's-right': {x:1,y:0}
+  };
+  Object.entries(dirs).forEach(([id, dir]) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      if (!(snake.dir.x===-dir.x && snake.dir.y===0) && !(snake.dir.y===-dir.y && snake.dir.x===0))
+        snake.nextDir = dir;
+    });
+  });
+  // keyboard
+  window.onkeydown = e => {
+    const map = {'ArrowUp':{x:0,y:-1},'ArrowDown':{x:0,y:1},'ArrowLeft':{x:-1,y:0},'ArrowRight':{x:1,y:0}};
+    if (map[e.key]) snake.nextDir = map[e.key];
+  };
+}
+
+function loopSnake(ts) {
+  if (!gameRunning) return;
+  const s = snake;
+  const dt = ts - s.lastTime;
+  s.lastTime = ts;
+  s.moveTimer += dt;
+
+  if (s.moveTimer >= s.moveInterval) {
+    s.moveTimer = 0;
+    s.dir = s.nextDir;
+    const head = {x: s.body[0].x + s.dir.x, y: s.body[0].y + s.dir.y};
+
+    // Wall wrap
+    head.x = (head.x + s.cols) % s.cols;
+    head.y = (head.y + s.rows) % s.rows;
+
+    // Self collision
+    if (s.body.some(b => b.x===head.x && b.y===head.y)) { gameOver(); return; }
+
+    s.body.unshift(head);
+    s.trail.push({x: head.x, y: head.y, life: 8});
+
+    let grew = false;
+    if (head.x===s.food.x && head.y===s.food.y) {
+      gameScore++;
+      grew = true;
+      s.moveInterval = Math.max(60, s.moveInterval - 1.5);
+      placeSnakeFood();
+      updateScoreDisplay();
+    }
+    if (s.bonus && head.x===s.bonus.x && head.y===s.bonus.y) {
+      gameScore += 3;
+      grew = true;
+      s.bonus = null;
+      updateScoreDisplay();
+    }
+    if (!grew) s.body.pop();
+
+    if (s.bonus) s.bonusTimer--;
+    if (s.bonus && s.bonusTimer <= 0) s.bonus = null;
+  }
+
+  s.trail = s.trail.filter(t => --t.life > 0);
+  drawSnake();
+  animFrame = requestAnimationFrame(loopSnake);
+}
+
+function drawSnake() {
+  const s = snake;
+  const W = canvas.width, H = canvas.height;
+  const C = s.CELL;
+
+  ctx.fillStyle = '#080818';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += C) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += C) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  // Trail
+  s.trail.forEach(t => {
+    ctx.globalAlpha = t.life / 8 * 0.2;
+    ctx.fillStyle = '#00f5ff';
+    ctx.fillRect(t.x*C+1, t.y*C+1, C-2, C-2);
+  });
+  ctx.globalAlpha = 1;
+
+  // Snake body
+  s.body.forEach((seg, i) => {
+    const ratio = 1 - i / s.body.length;
+    ctx.fillStyle = `hsl(${180 + i * 5}, 100%, ${40 + ratio*20}%)`;
+    ctx.shadowColor = i === 0 ? '#00f5ff' : 'transparent';
+    ctx.shadowBlur = i === 0 ? 12 : 0;
+    if (i === 0) {
+      ctx.fillRect(seg.x*C+1, seg.y*C+1, C-2, C-2);
+      // Eyes
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(seg.x*C+4, seg.y*C+4, 3, 3);
+      ctx.fillRect(seg.x*C+C-7, seg.y*C+4, 3, 3);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(seg.x*C+5, seg.y*C+5, 2, 2);
+      ctx.fillRect(seg.x*C+C-6, seg.y*C+5, 2, 2);
+    } else {
+      ctx.fillRect(seg.x*C+2, seg.y*C+2, C-4, C-4);
+    }
+  });
+  ctx.shadowBlur = 0;
+
+  // Food
+  if (s.food) {
+    const t = Date.now() / 400;
+    const pulse = Math.sin(t) * 2;
+    ctx.shadowColor = '#ff006e'; ctx.shadowBlur = 16 + pulse;
+    ctx.fillStyle = '#ff006e';
+    ctx.beginPath();
+    ctx.arc(s.food.x*C+C/2, s.food.y*C+C/2, C/2-2+pulse/2, 0, Math.PI*2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fff';
+    ctx.font = `${C-4}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('🍎', s.food.x*C+C/2, s.food.y*C+C-2);
+  }
+
+  // Bonus
+  if (s.bonus) {
+    ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 20;
+    ctx.fillStyle = '#ffd700';
+    ctx.font = `${C-2}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('⭐', s.bonus.x*C+C/2, s.bonus.y*C+C-2);
+    ctx.shadowBlur = 0;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ── GAME 3: PLANE SHOOTER ─────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+let plane = {};
+
+function initPlane() {
+  const W = canvas.width, H = canvas.height;
+  plane = {
+    px: W/2, py: H - 80, pw: 36, ph: 48,
+    speed: 0,
+    bullets: [],
+    enemies: [],
+    stars: Array.from({length: 60}, () => ({
+      x: Math.random()*W, y: Math.random()*H,
+      vy: Math.random()*2+0.5, r: Math.random()*1.5+0.3
+    })),
+    explosions: [],
+    spawnTimer: 0,
+    spawnInterval: 80,
+    autoFire: null,
+    lastTime: 0,
+    frameCount: 0,
+  };
+  bindPlaneControls();
+  animFrame = requestAnimationFrame(loopPlane);
+}
+
+function bindPlaneControls() {
+  const left = document.getElementById('p-left');
+  const right = document.getElementById('p-right');
+  const fire = document.getElementById('p-up');
+  if (!left) return;
+  left.addEventListener('touchstart', e => { e.preventDefault(); plane.speed = -7; });
+  left.addEventListener('touchend', e => { e.preventDefault(); plane.speed = 0; });
+  right.addEventListener('touchstart', e => { e.preventDefault(); plane.speed = 7; });
+  right.addEventListener('touchend', e => { e.preventDefault(); plane.speed = 0; });
+  fire.addEventListener('touchstart', e => {
+    e.preventDefault();
+    fireBullet();
+    plane.autoFire = setInterval(fireBullet, 250);
+  });
+  fire.addEventListener('touchend', e => { e.preventDefault(); clearInterval(plane.autoFire); });
+}
+
+function fireBullet() {
+  if (!gameRunning) return;
+  plane.bullets.push({x: plane.px, y: plane.py - 10, vy: -12, w: 4, h: 14});
+}
+
+function loopPlane(ts) {
+  if (!gameRunning) return;
+  const dt = Math.min(ts - plane.lastTime, 50);
+  plane.lastTime = ts;
+  plane.frameCount++;
+  const W = canvas.width, H = canvas.height;
+
+  // Move plane
+  plane.px = Math.max(plane.pw/2, Math.min(W - plane.pw/2, plane.px + plane.speed));
+
+  // Auto fire every 40 frames if no touch
+  if (plane.frameCount % 40 === 0 && plane.speed !== 0) fireBullet();
+  else if (plane.frameCount % 60 === 0) fireBullet();
+
+  // Stars
+  plane.stars.forEach(s => { s.y += s.vy; if (s.y > H) { s.y = 0; s.x = Math.random()*W; } });
+
+  // Bullets
+  plane.bullets.forEach(b => b.y += b.vy);
+  plane.bullets = plane.bullets.filter(b => b.y > -20);
+
+  // Spawn enemies
+  plane.spawnTimer++;
+  if (plane.spawnTimer >= plane.spawnInterval) {
+    plane.spawnTimer = 0;
+    plane.spawnInterval = Math.max(30, plane.spawnInterval - 0.3);
+    const types = ['fighter', 'bomber', 'zigzag'];
+    const type = types[Math.floor(Math.random()*types.length)];
+    plane.enemies.push({
+      x: Math.random()*(W-40)+20, y: -30,
+      vx: (Math.random()-0.5)*3, vy: type==='bomber'?1.5:2.5,
+      type, w: type==='bomber'?44:28, h: type==='bomber'?40:28,
+      hp: type==='bomber'?2:1, phase: Math.random()*Math.PI*2,
+    });
+  }
+
+  // Move enemies
+  plane.enemies.forEach(e => {
+    if (e.type === 'zigzag') e.x += Math.sin(plane.frameCount*0.08 + e.phase)*3;
+    e.x += e.vx;
+    e.y += e.vy;
+    if (e.x < 20 || e.x > W-20) e.vx *= -1;
+  });
+
+  // Bullet-enemy collisions
+  plane.bullets.forEach((b, bi) => {
+    plane.enemies.forEach((e, ei) => {
+      if (Math.abs(b.x-e.x) < e.w/2 && Math.abs(b.y-e.y) < e.h/2) {
+        b._dead = true;
+        e.hp--;
+        if (e.hp <= 0) {
+          e._dead = true;
+          gameScore++;
+          spawnExplosion(e.x, e.y);
+          updateScoreDisplay();
+        }
+      }
+    });
+  });
+  plane.bullets = plane.bullets.filter(b => !b._dead);
+  plane.enemies = plane.enemies.filter(e => !e._dead && e.y < H+40);
+
+  // Player collision
+  plane.enemies.forEach(e => {
+    if (Math.abs(e.x - plane.px) < (plane.pw/2 + e.w/2 - 8) &&
+        Math.abs(e.y - plane.py) < (plane.ph/2 + e.h/2 - 8)) {
+      spawnExplosion(plane.px, plane.py);
+      clearInterval(plane.autoFire);
+      gameOver(); return;
+    }
+  });
+
+  // Explosions
+  plane.explosions.forEach(ex => { ex.r += 3; ex.life -= 4; });
+  plane.explosions = plane.explosions.filter(ex => ex.life > 0);
+
+  drawPlane();
+  animFrame = requestAnimationFrame(loopPlane);
+}
+
+function spawnExplosion(x, y) {
+  for (let i = 0; i < 8; i++) {
+    const a = (i/8)*Math.PI*2;
+    plane.explosions.push({
+      x, y, r: 4, life: 100,
+      vx: Math.cos(a)*3, vy: Math.sin(a)*3,
+      color: ['#ff6600','#ffcc00','#ff0000'][Math.floor(Math.random()*3)]
+    });
+  }
+}
+
+function drawPlane() {
+  const W = canvas.width, H = canvas.height;
+  ctx.fillStyle = '#04040f';
+  ctx.fillRect(0, 0, W, H);
+
+  // Stars
+  plane.stars.forEach(s => {
+    ctx.globalAlpha = 0.5 + s.vy*0.2;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // Enemies
+  plane.enemies.forEach(e => {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    if (e.type === 'bomber') {
+      // Red bomber
+      ctx.shadowColor = '#ff003c'; ctx.shadowBlur = 12;
+      ctx.fillStyle = '#cc0030';
+      ctx.beginPath();
+      ctx.moveTo(0, -e.h/2);
+      ctx.lineTo(e.w/2, e.h/2);
+      ctx.lineTo(0, e.h/4);
+      ctx.lineTo(-e.w/2, e.h/2);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ff4060';
+      ctx.fillRect(-8, -8, 16, 12);
+    } else {
+      ctx.shadowColor = '#ff6600'; ctx.shadowBlur = 8;
+      ctx.fillStyle = '#cc3300';
+      ctx.beginPath();
+      ctx.moveTo(0, e.h/2); ctx.lineTo(e.w/2, -e.h/2); ctx.lineTo(-e.w/2, -e.h/2);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ff5500';
+      ctx.fillRect(-5, -6, 10, 10);
+    }
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  });
+
+  // Bullets
+  plane.bullets.forEach(b => {
+    ctx.shadowColor = '#00f5ff'; ctx.shadowBlur = 8;
+    ctx.fillStyle = '#00f5ff';
+    ctx.fillRect(b.x - b.w/2, b.y, b.w, b.h);
+    ctx.shadowBlur = 0;
+  });
+
+  // Explosions
+  plane.explosions.forEach(ex => {
+    ex.x += ex.vx; ex.y += ex.vy;
+    ctx.globalAlpha = ex.life/100;
+    ctx.shadowColor = ex.color; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(ex.x, ex.y, ex.r, 0, Math.PI*2);
+    ctx.fillStyle = ex.color; ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+  ctx.globalAlpha = 1;
+
+  // Player plane
+  const px = plane.px, py = plane.py;
+  ctx.save(); ctx.translate(px, py);
+  ctx.shadowColor = '#7b2fff'; ctx.shadowBlur = 20;
+  // Body
+  ctx.fillStyle = '#6a1fff';
+  ctx.beginPath();
+  ctx.moveTo(0, -24); ctx.lineTo(14, 16); ctx.lineTo(0, 8); ctx.lineTo(-14, 16);
+  ctx.closePath(); ctx.fill();
+  // Cockpit
+  ctx.fillStyle = '#c0b0ff';
+  ctx.beginPath(); ctx.ellipse(0, -6, 5, 10, 0, 0, Math.PI*2); ctx.fill();
+  // Engines
+  ctx.fillStyle = '#4a0fcc';
+  ctx.fillRect(-18, 4, 8, 12); ctx.fillRect(10, 4, 8, 12);
+  // Exhaust
+  const t = Date.now()/100;
+  ctx.fillStyle = `hsl(${40+Math.sin(t)*20},100%,60%)`;
+  ctx.beginPath(); ctx.ellipse(-14, 18, 4, 6+Math.sin(t)*2, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(14, 18, 4, 6+Math.sin(t+1)*2, 0, 0, Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+
+  // Score hint
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.font = '12px Rajdhani';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Волна ${Math.floor(gameScore/5)+1}`, 8, 20);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+document.getElementById('best-pong').textContent = 'Рекорд: ' + bests.pong;
+document.getElementById('best-snake').textContent = 'Рекорд: ' + bests.snake;
+document.getElementById('best-plane').textContent = 'Рекорд: ' + bests.plane;
+</script>
+</body>
+</html>
